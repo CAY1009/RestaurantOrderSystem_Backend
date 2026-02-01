@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Hamburger",
+    "description": "A classic American burger with beef patty, lettuce, tomato, and special sauce.",
+    "price": 9.99,
+    "category": "Main Course",
+    "ingredients": [
+      "Beef Patty",
+      "Lettuce",
+      "Tomato",
+      "Onion",
+      "Pickles",
+      "Special Sauce",
+      "Bun"
+    ],
+    "createdBy": {
+      "name": "Chef John Doe",
+      "phone": "555-1234"
+    }
+  },
+  {
+    "name": "Fries",
+    "description": "Crispy golden fries seasoned with salt and served with ketchup.",
+    "price": 4.99,
+    "category": "Sides",
+    "ingredients": ["Potatoes", "Salt", "Ketchup"],
+    "createdBy": {
+      "name": "Chef John Doe",
+      "phone": "555-1234"
+    }
+  }
+]
