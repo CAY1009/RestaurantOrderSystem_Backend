@@ -19,6 +19,8 @@
   },
   "homepage": "https://github.com/CAY1009/RestaurantOrderSystem_Backend#readme",
   "dependencies": {
-    "express": "^5.2.1"
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "pg": "^8.18.0"
   }
 }
