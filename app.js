@@ -1,13 +1,14 @@
-const express = require('express');
-const { Pool } = require('pg')
+import express from 'express';
+import {Pool} from 'pg';
+import cors from 'cors';
+
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-const cors = require('cors');
 
 
 // Middleware to parse JSON bodies (for API requests)
 app.use(express.json());
+app.use(cors());
 
 //PostgreSQL Connection Pool
 const pool = new Pool({
