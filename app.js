@@ -776,7 +776,7 @@ async function initializeDatabase() {
         itemName VARCHAR(255) NOT NULL,
         description TEXT,
         price DECIMAL(10,2) NOT NULL,
-        createdBy INTEGER,
+        createdBy VARCHAR(255),
         createdAt TIMESTAMP DEFAULT NOW(),
         updatedAt TIMESTAMP DEFAULT NOW()
       )
@@ -789,7 +789,7 @@ async function initializeDatabase() {
         fullName VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         phone VARCHAR(50),
-        createdBy INTEGER,
+        createdBy VARCHAR(255),
         createdAt TIMESTAMP DEFAULT NOW(),
         updatedAt TIMESTAMP DEFAULT NOW()
       )
@@ -801,7 +801,7 @@ async function initializeDatabase() {
         orderId SERIAL PRIMARY KEY,
         customerId INTEGER NOT NULL REFERENCES Customer(customerId),
         totalCharge DECIMAL(10,2) NOT NULL,
-        createdBy INTEGER,
+        createdBy VARCHAR(255),
         createdAt TIMESTAMP DEFAULT NOW(),
         updatedAt TIMESTAMP DEFAULT NOW()
       )
@@ -815,7 +815,7 @@ async function initializeDatabase() {
         itemId INTEGER NOT NULL REFERENCES MenuItem(itemId),
         quantity INTEGER NOT NULL,
         price DECIMAL(10,2) NOT NULL,
-        createdBy INTEGER,
+        createdBy VARCHAR(255),
         createdAt TIMESTAMP DEFAULT NOW(),
         updatedAt TIMESTAMP DEFAULT NOW()
       )
@@ -828,7 +828,7 @@ async function initializeDatabase() {
         fullName VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         phone VARCHAR(50),
-        createdBy INTEGER,
+        createdBy VARCHAR(255),
         createdAt TIMESTAMP DEFAULT NOW(),
         updatedAt TIMESTAMP DEFAULT NOW()
       )
