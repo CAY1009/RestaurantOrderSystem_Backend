@@ -18,7 +18,7 @@ const pool = new Pool({
   port: 5432,
   database: 'RestaurantOrderSystem',
   user: 'postgres', //your username
-  password: 'Anhyeuem1993', //your password
+  password: '', //your password
 });
 
 // Define a simple GET route
