@@ -1,6 +1,10 @@
 import express from 'express';
 import { Pool } from 'pg';
+import { Pool } from 'pg';
 import cors from 'cors';
+import dotenv from 'dotenv';
+
+dotenv.config();
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -14,6 +18,8 @@ app.use(cors());
 
 //PostgreSQL Connection Pool
 const pool = new Pool({
+  host: 'localhost', //your local host
+  port: 5432,
   host: 'localhost', //your local host
   port: 5432,
   database: 'RestaurantOrderSystem',
@@ -63,8 +69,15 @@ app.get('/api/menu-items/:id', async (req, res) => {
       'SELECT * FROM MenuItem WHERE itemId = $1',
       [id],
     );
+    const result = await pool.query(
+      'SELECT * FROM MenuItem WHERE itemId = $1',
+      [id],
+    );
 
     if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Menu item not found' });
       return res
         .status(404)
         .json({ success: false, message: 'Menu item not found' });
@@ -86,12 +99,16 @@ app.post('/api/menu-items', async (req, res) => {
       return res
         .status(400)
         .json({ success: false, message: 'itemName and price are required' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'itemName and price are required' });
     }
 
     const result = await pool.query(
       `INSERT INTO MenuItem (itemName, description, price, createdBy, createdAt)
        VALUES ($1, $2, $3, $4, NOW())
        RETURNING *`,
+      [itemName, description, price, createdBy],
       [itemName, description, price, createdBy],
     );
 
@@ -112,7 +129,14 @@ app.put('/api/menu-items/:id', async (req, res) => {
       'SELECT * FROM MenuItem WHERE itemId = $1',
       [id],
     );
+    const existing = await pool.query(
+      'SELECT * FROM MenuItem WHERE itemId = $1',
+      [id],
+    );
     if (existing.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Menu item not found' });
       return res
         .status(404)
         .json({ success: false, message: 'Menu item not found' });
@@ -127,6 +151,7 @@ app.put('/api/menu-items/:id', async (req, res) => {
            updatedAt   = NOW()
        WHERE itemId = $5
        RETURNING *`,
+      [itemName, description, price, updatedBy, id],
       [itemName, description, price, updatedBy, id],
     );
 
@@ -146,7 +171,14 @@ app.delete('/api/menu-items/:id', async (req, res) => {
       'SELECT * FROM MenuItem WHERE itemId = $1',
       [id],
     );
+    const existing = await pool.query(
+      'SELECT * FROM MenuItem WHERE itemId = $1',
+      [id],
+    );
     if (existing.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Menu item not found' });
       return res
         .status(404)
         .json({ success: false, message: 'Menu item not found' });
@@ -161,10 +193,14 @@ app.delete('/api/menu-items/:id', async (req, res) => {
 });
 
 //  Customers
+//  Customers
 
 // GET all customers
 app.get('/api/customers', async (req, res) => {
   try {
+    const result = await pool.query(
+      'SELECT * FROM Customer ORDER BY customerId ASC',
+    );
     const result = await pool.query(
       'SELECT * FROM Customer ORDER BY customerId ASC',
     );
@@ -183,8 +219,15 @@ app.get('/api/customers/:id', async (req, res) => {
       'SELECT * FROM Customer WHERE customerId = $1',
       [id],
     );
+    const result = await pool.query(
+      'SELECT * FROM Customer WHERE customerId = $1',
+      [id],
+    );
 
     if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Customer not found' });
       return res
         .status(404)
         .json({ success: false, message: 'Customer not found' });
@@ -232,7 +275,14 @@ app.put('/api/customers/:id', async (req, res) => {
       'SELECT * FROM Customer WHERE customerId = $1',
       [id],
     );
+    const existing = await pool.query(
+      'SELECT * FROM Customer WHERE customerId = $1',
+      [id],
+    );
     if (existing.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Customer not found' });
       return res
         .status(404)
         .json({ success: false, message: 'Customer not found' });
@@ -265,7 +315,14 @@ app.delete('/api/customers/:id', async (req, res) => {
       'SELECT * FROM Customer WHERE customerId = $1',
       [id],
     );
+    const existing = await pool.query(
+      'SELECT * FROM Customer WHERE customerId = $1',
+      [id],
+    );
     if (existing.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Customer not found' });
       return res
         .status(404)
         .json({ success: false, message: 'Customer not found' });
@@ -289,6 +346,7 @@ app.get('/api/orders', async (req, res) => {
        FROM "Order" o
        JOIN Customer c ON o.customerId = c.customerId
        ORDER BY o.orderId DESC`,
+       ORDER BY o.orderId DESC`,
     );
     res.json({ success: true, data: result.rows });
   } catch (err) {
@@ -307,6 +365,7 @@ app.get('/api/orders/customer/:customerId', async (req, res) => {
        JOIN Customer c ON o.customerId = c.customerId
        WHERE o.customerId = $1
        ORDER BY o.orderId DESC`,
+      [customerId],
       [customerId],
     );
     res.json({ success: true, data: result.rows });
@@ -327,9 +386,13 @@ app.get('/api/orders/:id', async (req, res) => {
        JOIN Customer c ON o.customerId = c.customerId
        WHERE o.orderId = $1`,
       [id],
+      [id],
     );
 
     if (orderResult.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Order not found' });
       return res
         .status(404)
         .json({ success: false, message: 'Order not found' });
@@ -341,6 +404,7 @@ app.get('/api/orders/:id', async (req, res) => {
        JOIN MenuItem m ON oi.itemId = m.itemId
        WHERE oi.orderId = $1
        ORDER BY oi.orderItemId ASC`,
+      [id],
       [id],
     );
 
@@ -374,17 +438,23 @@ app.post('/api/orders', async (req, res) => {
     const custCheck = await client.query(
       'SELECT customerId FROM Customer WHERE customerId = $1',
       [customerId],
+      [customerId],
     );
     if (custCheck.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Customer not found' });
       return res
         .status(404)
         .json({ success: false, message: 'Customer not found' });
     }
 
     // Fetch prices from DB
+    // Fetch prices from DB
     const itemIds = items.map((i) => i.itemId);
     const menuResult = await client.query(
       'SELECT itemId, price FROM MenuItem WHERE itemId = ANY($1::int[])',
+      [itemIds],
       [itemIds],
     );
 
@@ -417,6 +487,7 @@ app.post('/api/orders', async (req, res) => {
        VALUES ($1, $2, $3, NOW())
        RETURNING *`,
       [customerId, totalCharge.toFixed(2), createdBy],
+      [customerId, totalCharge.toFixed(2), createdBy],
     );
     const newOrder = orderResult.rows[0];
 
@@ -425,6 +496,7 @@ app.post('/api/orders', async (req, res) => {
       await client.query(
         `INSERT INTO OrderItem (orderId, itemId, quantity, price, createdBy, createdAt)
          VALUES ($1, $2, $3, $4, $5, NOW())`,
+        [newOrder.orderid, line.itemId, line.quantity, line.price, createdBy],
         [newOrder.orderid, line.itemId, line.quantity, line.price, createdBy],
       );
     }
@@ -457,7 +529,14 @@ app.delete('/api/orders/:id', async (req, res) => {
       'SELECT * FROM "Order" WHERE orderId = $1',
       [id],
     );
+    const existing = await client.query(
+      'SELECT * FROM "Order" WHERE orderId = $1',
+      [id],
+    );
     if (existing.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Order not found' });
       return res
         .status(404)
         .json({ success: false, message: 'Order not found' });
@@ -489,6 +568,7 @@ app.get('/api/order-items/order/:orderId', async (req, res) => {
        WHERE oi.orderId = $1
        ORDER BY oi.orderItemId ASC`,
       [orderId],
+      [orderId],
     );
     res.json({ success: true, data: result.rows });
   } catch (err) {
@@ -510,13 +590,24 @@ app.post('/api/order-items', async (req, res) => {
         success: false,
         message: 'orderId, itemId, and quantity are required',
       });
+      return res.status(400).json({
+        success: false,
+        message: 'orderId, itemId, and quantity are required',
+      });
     }
 
     const menuResult = await client.query(
       'SELECT price FROM MenuItem WHERE itemId = $1',
       [itemId],
     );
+    const menuResult = await client.query(
+      'SELECT price FROM MenuItem WHERE itemId = $1',
+      [itemId],
+    );
     if (menuResult.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'MenuItem not found' });
       return res
         .status(404)
         .json({ success: false, message: 'MenuItem not found' });
@@ -528,6 +619,7 @@ app.post('/api/order-items', async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, NOW())
        RETURNING *`,
       [orderId, itemId, quantity, price, createdBy],
+      [orderId, itemId, quantity, price, createdBy],
     );
 
     // Recalculate order total
@@ -536,6 +628,7 @@ app.post('/api/order-items', async (req, res) => {
        SET totalCharge = (SELECT SUM(price * quantity) FROM OrderItem WHERE orderId = $1),
            updatedAt   = NOW()
        WHERE orderId = $1`,
+      [orderId],
       [orderId],
     );
 
@@ -563,13 +656,23 @@ app.put('/api/order-items/:id', async (req, res) => {
       return res
         .status(400)
         .json({ success: false, message: 'quantity must be at least 1' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'quantity must be at least 1' });
     }
 
     const existing = await client.query(
       'SELECT * FROM OrderItem WHERE orderItemId = $1',
       [id],
     );
+    const existing = await client.query(
+      'SELECT * FROM OrderItem WHERE orderItemId = $1',
+      [id],
+    );
     if (existing.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Order item not found' });
       return res
         .status(404)
         .json({ success: false, message: 'Order item not found' });
@@ -581,6 +684,7 @@ app.put('/api/order-items/:id', async (req, res) => {
        WHERE orderItemId = $3
        RETURNING *`,
       [quantity, updatedBy, id],
+      [quantity, updatedBy, id],
     );
 
     const orderId = existing.rows[0].orderid;
@@ -591,6 +695,7 @@ app.put('/api/order-items/:id', async (req, res) => {
        SET totalCharge = (SELECT SUM(price * quantity) FROM OrderItem WHERE orderId = $1),
            updatedAt   = NOW()
        WHERE orderId = $1`,
+      [orderId],
       [orderId],
     );
 
@@ -617,7 +722,14 @@ app.delete('/api/order-items/:id', async (req, res) => {
       'SELECT * FROM OrderItem WHERE orderItemId = $1',
       [id],
     );
+    const existing = await client.query(
+      'SELECT * FROM OrderItem WHERE orderItemId = $1',
+      [id],
+    );
     if (existing.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Order item not found' });
       return res
         .status(404)
         .json({ success: false, message: 'Order item not found' });
@@ -632,6 +744,7 @@ app.delete('/api/order-items/:id', async (req, res) => {
        SET totalCharge = (SELECT COALESCE(SUM(price * quantity), 0) FROM OrderItem WHERE orderId = $1),
            updatedAt   = NOW()
        WHERE orderId = $1`,
+      [orderId],
       [orderId],
     );
 
@@ -673,6 +786,9 @@ app.get('/api/users/:id', async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: 'User not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: 'User not found' });
     }
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
@@ -688,6 +804,9 @@ app.post('/api/users', async (req, res) => {
     const { fullName, email, phone, userrole } = req.body;
 
     if (!fullName || !email) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'fullName and email are required' });
       return res
         .status(400)
         .json({ success: false, message: 'fullName and email are required' });
@@ -716,7 +835,14 @@ app.put('/api/users/:id', async (req, res) => {
       'SELECT * FROM "User" WHERE userId = $1',
       [id],
     );
+    const existing = await pool.query(
+      'SELECT * FROM "User" WHERE userId = $1',
+      [id],
+    );
     if (existing.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'User not found' });
       return res
         .status(404)
         .json({ success: false, message: 'User not found' });
@@ -750,7 +876,14 @@ app.delete('/api/users/:id', async (req, res) => {
       'SELECT * FROM "User" WHERE userId = $1',
       [id],
     );
+    const existing = await pool.query(
+      'SELECT * FROM "User" WHERE userId = $1',
+      [id],
+    );
     if (existing.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'User not found' });
       return res
         .status(404)
         .json({ success: false, message: 'User not found' });
@@ -844,6 +977,8 @@ async function initializeDatabase() {
 }
 
 // Start the server
+app.listen(PORT, async () => {
+  await initializeDatabase();
 app.listen(PORT, async () => {
   await initializeDatabase();
   console.log(`Server is running on http://localhost:${PORT}`);
