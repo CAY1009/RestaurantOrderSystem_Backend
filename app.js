@@ -18,7 +18,7 @@ const pool = new Pool({
   port: 5432,
   database: 'RestaurantOrderSystem',
   user: 'postgres', //your username
-  password: '', //your password
+  password: 'Anhyeuem1993', //your password
 });
 
 // Define a simple GET route
@@ -38,6 +38,28 @@ app.get('/api/menu-items', async (req, res) => {
   try {
     const { search } = req.query;
     let query = 'SELECT * FROM MenuItem';
+    const params = [];
+
+    if (search) {
+      query += ' WHERE itemName ILIKE $1 OR description ILIKE $1';
+      params.push(`%${search}%`);
+    }
+
+    query += ' ORDER BY itemId ASC';
+
+    const result = await pool.query(query, params);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+//Get all menu items Home Screen (no show disabled items)
+app.get('/api/menu-items/home', async (req, res) => {
+  try {
+    const { search } = req.query;
+    let query = 'SELECT * FROM MenuItem WHERE itemstatus=true';
     const params = [];
 
     if (search) {
@@ -80,19 +102,19 @@ app.get('/api/menu-items/:id', async (req, res) => {
 // POST create a new menu item
 app.post('/api/menu-items', async (req, res) => {
   try {
-    const { itemName, description, price, createdBy } = req.body;
+    const { itemname, description, price } = req.body;
 
-    if (!itemName || !price) {
+    if (!itemname || !price) {
       return res
         .status(400)
         .json({ success: false, message: 'itemName and price are required' });
     }
 
     const result = await pool.query(
-      `INSERT INTO MenuItem (itemName, description, price, createdBy, createdAt)
-       VALUES ($1, $2, $3, $4, NOW())
+      `INSERT INTO MenuItem (itemName, description, price, createdBy, createdAt, itemstatus)
+       VALUES ($1, $2, $3, 'Manager', NOW(), true)
        RETURNING *`,
-      [itemName, description, price, createdBy],
+      [itemname, description, price],
     );
 
     res.status(201).json({ success: true, data: result.rows[0] });
@@ -106,7 +128,7 @@ app.post('/api/menu-items', async (req, res) => {
 app.put('/api/menu-items/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { itemName, description, price, updatedBy } = req.body;
+    const { itemname, description, price, itemstatus } = req.body;
 
     const existing = await pool.query(
       'SELECT * FROM MenuItem WHERE itemId = $1',
@@ -120,14 +142,14 @@ app.put('/api/menu-items/:id', async (req, res) => {
 
     const result = await pool.query(
       `UPDATE MenuItem
-       SET itemName    = COALESCE($1, itemName),
+       SET itemName    = COALESCE($1, itemname),
            description = COALESCE($2, description),
            price       = COALESCE($3, price),
-           updatedBy   = $4,
-           updatedAt   = NOW()
+           updatedAt   = NOW(),
+           itemstatus  = $4
        WHERE itemId = $5
        RETURNING *`,
-      [itemName, description, price, updatedBy, id],
+      [itemname, description, price, itemstatus, id],
     );
 
     res.json({ success: true, data: result.rows[0] });
@@ -776,6 +798,7 @@ async function initializeDatabase() {
         description TEXT,
         price DECIMAL(10,2) NOT NULL,
         createdBy VARCHAR(255),
+        itemstatus VARCHAR(255),
         createdAt TIMESTAMP DEFAULT NOW(),
         updatedAt TIMESTAMP DEFAULT NOW()
       )
