@@ -18,7 +18,7 @@ const pool = new Pool({
   port: 5432,
   database: 'RestaurantOrderSystem',
   user: 'postgres', //your username
-  password: 'Anhyeuem1993', //your password
+  password: '', //your password
 });
 
 // Define a simple GET route
@@ -798,7 +798,7 @@ async function initializeDatabase() {
         description TEXT,
         price DECIMAL(10,2) NOT NULL,
         createdBy VARCHAR(255),
-        itemstatus VARCHAR(255),
+        itemstatus BOOLEAN,
         createdAt TIMESTAMP DEFAULT NOW(),
         updatedAt TIMESTAMP DEFAULT NOW()
       )
@@ -850,7 +850,7 @@ async function initializeDatabase() {
         fullName VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         phone VARCHAR(50),
-        role NVARCHAR(50),
+        userrole NVARCHAR(50),
         createdBy VARCHAR(255),
         createdAt TIMESTAMP DEFAULT NOW(),
         updatedAt TIMESTAMP DEFAULT NOW()
