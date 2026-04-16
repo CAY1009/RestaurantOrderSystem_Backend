@@ -18,7 +18,7 @@ const pool = new Pool({
   port: 5432,
   database: 'RestaurantOrderSystem',
   user: 'postgres', //your username
-  password: '', //your password
+  password: 'Anhyeuem1993', //your password
 });
 
 // Define a simple GET route
@@ -786,6 +786,123 @@ app.delete('/api/users/:id', async (req, res) => {
   }
 });
 
+// AUTH (customer login)
+// GET auth existence (do NOT return password)
+app.get('/api/auth/:customerId', async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const result = await pool.query(
+      'SELECT customerId FROM CustomerAuth WHERE customerId = $1',
+      [customerId],
+    );
+
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Auth entry not found' });
+    }
+
+    res.json({ success: true, data: { customerId: result.rows[0].customerid } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// POST create auth entry for a customer (signup)
+app.post('/api/auth', async (req, res) => {
+  try {
+    const { customerId, password } = req.body;
+
+    if (!customerId || !password) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'customerId and password are required' });
+    }
+
+    // Verify customer exists
+    const cust = await pool.query(
+      'SELECT customerId FROM Customer WHERE customerId = $1',
+      [customerId],
+    );
+    if (cust.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Customer not found' });
+    }
+
+    // Check if auth already exists
+    const existing = await pool.query(
+      'SELECT * FROM CustomerAuth WHERE customerId = $1',
+      [customerId],
+    );
+    if (existing.rows.length > 0) {
+      return res
+        .status(409)
+        .json({ success: false, message: 'Auth entry already exists' });
+    }
+
+    // NOTE: In production, passwords MUST be hashed before storing.
+    const result = await pool.query(
+      `INSERT INTO CustomerAuth (customerId, password, createdAt)
+       VALUES ($1, $2, NOW())
+       RETURNING customerId`,
+      [customerId, password],
+    );
+
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// POST login - verify username (email or customerId) and password
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body; // frontend may send username (email) and password
+
+    if (!username || !password) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'username and password are required' });
+    }
+
+    // Find customer by email or by id
+    let custResult;
+    if (/^\d+$/.test(String(username))) {
+      custResult = await pool.query('SELECT * FROM Customer WHERE customerId = $1', [username]);
+    } else {
+      custResult = await pool.query('SELECT * FROM Customer WHERE email = $1', [username]);
+    }
+
+    if (custResult.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Customer not found' });
+    }
+
+    const customer = custResult.rows[0];
+
+    // Check auth entry exists
+    const authResult = await pool.query('SELECT password FROM CustomerAuth WHERE customerId = $1', [customer.customerid]);
+    if (authResult.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Auth entry not found' });
+    }
+
+    const storedPassword = authResult.rows[0].password;
+
+    // NOTE: This compares plaintext passwords. Replace with hashing (bcrypt) in production.
+    if (storedPassword !== password) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    // Successful login — return customer info (do not return password)
+    res.json({ success: true, data: { customerId: customer.customerid, fullName: customer.fullname, email: customer.email } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // Initialize database tables
 async function initializeDatabase() {
   const client = await pool.connect();
@@ -854,6 +971,16 @@ async function initializeDatabase() {
         createdBy VARCHAR(255),
         createdAt TIMESTAMP DEFAULT NOW(),
         updatedAt TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Create CustomerAuth table for login/signup
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS CustomerAuth (
+        authId SERIAL PRIMARY KEY,
+        customerId INTEGER UNIQUE NOT NULL REFERENCES Customer(customerId),
+        password VARCHAR(255) NOT NULL,
+        createdAt TIMESTAMP DEFAULT NOW()
       )
     `);
 
